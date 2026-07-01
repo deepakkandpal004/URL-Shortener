@@ -10,6 +10,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Set VERCEL_ENABLED to 'true' in repo vars (Settings → Variables → Actions)
+  # once you have VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID secrets configured
+  VERCEL_ENABLED: ${{ vars.VERCEL_ENABLED || 'false' }}
+
 jobs:
   test:
     name: test
@@ -41,13 +46,12 @@ jobs:
       - name: check drizzle migrations
         run: pnpm db:check
 
-      - name: build check
+      - name: build
         run: pnpm build
         env:
           DATABASE_URL: postgresql://x:x@localhost:5432/x
           JWT_SECRET: ci-test-secret
 
-      # audit runs last — non-blocking, reports findings without failing the pipeline
       - name: security audit
         run: pnpm audit --audit-level=high
         continue-on-error: true
@@ -57,7 +61,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     timeout-minutes: 15
-    if: github.event_name == 'pull_request' && vars.VERCEL_CONFIGURED == 'true'
+    if: github.event_name == 'pull_request' && vars.VERCEL_ENABLED == 'true'
     permissions:
       contents: read
       pull-requests: write
@@ -79,7 +83,7 @@ jobs:
       - name: install vercel cli
         run: pnpm add -g vercel
 
-      - name: deploy preview to vercel
+      - name: deploy preview
         id: preview
         run: |
           vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
@@ -98,7 +102,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `🔍 Preview deployed: ${{ steps.preview.outputs.url }}`
+              body: `🔍 Preview: ${{ steps.preview.outputs.url }}`
             })
 
   deploy:
@@ -106,7 +110,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     timeout-minutes: 15
-    if: github.event_name == 'push' && vars.VERCEL_CONFIGURED == 'true'
+    if: github.event_name == 'push' && vars.VERCEL_ENABLED == 'true'
     permissions:
       contents: read
 
@@ -135,7 +139,8 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
-      # verifies the deployment is actually serving traffic after going live
       - name: health check
-        run: curl -f https://${{ vars.PRODUCTION_URL }}/api/health || echo "health check skipped — set PRODUCTION_URL var to enable"
+        run: |
+          curl -f https://${{ vars.PRODUCTION_URL }}/api/health \
+            || echo "set PRODUCTION_URL repo var to enable health check"
         continue-on-error: true
