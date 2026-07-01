@@ -10,13 +10,13 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4.4.0
+      - uses: actions/setup-node@v4
         with:
           node-version: 24
 
-      - uses: pnpm/action-setup@v4.1.0
+      - uses: pnpm/action-setup@v4
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
@@ -26,9 +26,9 @@ jobs:
     needs: check
     if: github.event_name == 'push'
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4.1.0
+      - uses: pnpm/action-setup@v4
 
       - run: pnpm install --frozen-lockfile --prod
 
