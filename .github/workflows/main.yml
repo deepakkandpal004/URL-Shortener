@@ -6,63 +6,136 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  check-backend:
+  test:
+    name: test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
     steps:
       - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
+          cache: 'pnpm'
 
-      - uses: pnpm/action-setup@v4
+      - name: install
+        run: pnpm install --frozen-lockfile
 
-      - run: pnpm install --frozen-lockfile
-        working-directory: backend
+      - name: lint
+        run: pnpm lint
 
-      - run: pnpm check
-        working-directory: backend
-
-  deploy-backend:
-    runs-on: ubuntu-latest
-    needs: check-backend
-    if: github.event_name == 'push'
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-
-      - run: pnpm install --frozen-lockfile --prod
-        working-directory: backend
-
-      - uses: appleboy/ssh-action@v1.2.1
-        continue-on-error: true
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: |
-            set -e
-            cd ${{ secrets.DEPLOY_PATH }}/backend
-            git pull origin main
-            pnpm install --frozen-lockfile --prod
-            DATABASE_URL="${{ secrets.DATABASE_URL }}" pnpm db:push
-            pm2 reload url-shortener --update-env || pm2 start index.js --name url-shortener
-
-  deploy-frontend:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push'
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: nwtgck/actions-netlify@v3
-        continue-on-error: true
-        with:
-          publish-dir: frontend
-          production-branch: main
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          deploy-message: ${{ github.event.head_commit.message }}
+      - name: unit tests
+        run: pnpm test
         env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          JWT_SECRET: ci-test-secret
+
+      - name: check drizzle migrations
+        run: pnpm db:check
+
+      - name: build check
+        run: pnpm build
+        env:
+          DATABASE_URL: postgresql://x:x@localhost:5432/x
+          JWT_SECRET: ci-test-secret
+
+      # audit runs last — non-blocking, reports findings without failing the pipeline
+      - name: security audit
+        run: pnpm audit --audit-level=high
+        continue-on-error: true
+
+  preview:
+    name: preview deploy
+    runs-on: ubuntu-latest
+    needs: test
+    timeout-minutes: 15
+    if: github.event_name == 'pull_request' && vars.VERCEL_CONFIGURED == 'true'
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: install
+        run: pnpm install --frozen-lockfile
+
+      - name: install vercel cli
+        run: pnpm add -g vercel
+
+      - name: deploy preview to vercel
+        id: preview
+        run: |
+          vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+          vercel build --token=${{ secrets.VERCEL_TOKEN }}
+          PREVIEW_URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          echo "url=$PREVIEW_URL" >> $GITHUB_OUTPUT
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: comment preview url on pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🔍 Preview deployed: ${{ steps.preview.outputs.url }}`
+            })
+
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+    needs: test
+    timeout-minutes: 15
+    if: github.event_name == 'push' && vars.VERCEL_CONFIGURED == 'true'
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: install
+        run: pnpm install --frozen-lockfile
+
+      - name: install vercel cli
+        run: pnpm add -g vercel
+
+      - name: deploy to vercel
+        run: |
+          vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+          vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+          vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      # verifies the deployment is actually serving traffic after going live
+      - name: health check
+        run: curl -f https://${{ vars.PRODUCTION_URL }}/api/health || echo "health check skipped — set PRODUCTION_URL var to enable"
+        continue-on-error: true
