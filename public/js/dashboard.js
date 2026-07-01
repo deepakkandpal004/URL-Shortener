@@ -18,7 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Base URL configuration for display
     const BASE_URL = window.location.origin + '/';
-    document.getElementById('baseUrlDisplay').textContent = BASE_URL;
+    // Show only host in the prefix chip to keep it compact
+    document.getElementById('baseUrlDisplay').textContent = window.location.host + '/';
 
     // Initialization
     if (API.getToken()) {
@@ -113,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Visual feedback
             const originalIcon = copyBtn.innerHTML;
-            copyBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+            copyBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#DB8D4E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
             copyBtn.classList.add('copied');
             
             setTimeout(() => {
@@ -200,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     await navigator.clipboard.writeText(url);
                     const icon = e.currentTarget.querySelector('svg');
                     const oldHtml = icon.outerHTML;
-                    e.currentTarget.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+                    e.currentTarget.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DB8D4E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
                     
                     setTimeout(() => {
                         e.currentTarget.innerHTML = oldHtml;

@@ -84,9 +84,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show success message if redirected from register
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('registered')) {
-            errorContainer.style.color = '#10b981';
-            errorContainer.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
-            errorContainer.style.borderColor = 'rgba(16, 185, 129, 0.2)';
+            errorContainer.style.color = '#DB8D4E';
+            errorContainer.style.backgroundColor = 'rgba(219, 141, 78, 0.1)';
+            errorContainer.style.borderColor = 'rgba(219, 141, 78, 0.2)';
             showError('Registration successful! Please sign in.');
             
             // Reset colors back to error style after showing

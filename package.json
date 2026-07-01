@@ -5,7 +5,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "node --watch index",
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "lint": "node --input-type=module --eval \"import('./index.js').catch(e => { console.error(e); process.exit(1); })\"",
+    "check": "node --check index.js routes/url.routes.js routes/user.routes.js services/url.service.js services/user.services.js middlewares/auth.middleware.js utils/hash.js utils/token.js",
     "db:studio": "npx drizzle-kit studio",
     "db:push": "npx drizzle-kit push"
   },
