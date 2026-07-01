@@ -6,7 +6,7 @@ export const getUserByEmail = async (email) => {
     const [existingUser] = await db
     .select({
         id: usersTable.id,
-        firstname: usersTable.lastname,
+        firstname: usersTable.firstname,
         lastname: usersTable.lastname,
         email: usersTable.email,
         salt: usersTable.salt,

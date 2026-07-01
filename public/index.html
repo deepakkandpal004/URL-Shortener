@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener | Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div id="app" class="app-container">
+        <header class="navbar glass">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                <span>ShortLink</span>
+            </div>
+            <div class="user-actions">
+                <span id="user-initial" class="avatar hidden"></span>
+                <button id="logout-btn" class="btn btn-outline hidden">Logout</button>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <section class="hero-section">
+                <div class="hero-text">
+                    <h1>Shorten. Share. <span class="gradient-text">Simplify.</span></h1>
+                    <p>Create sleek short links in seconds. Track and manage your URLs with a fast, modern dashboard.</p>
+                </div>
+                
+                <div class="shortener-box glass">
+                    <form id="shorten-form" class="shorten-form">
+                        <div class="input-group">
+                            <input type="url" id="url-input" placeholder="Paste your long URL here (https://...)" required>
+                        </div>
+                        <div class="input-group collapsed" id="custom-alias-group">
+                            <input type="text" id="custom-alias" placeholder="Custom Alias (Optional)" maxlength="20">
+                            <span class="alias-prefix" id="baseUrlDisplay"></span>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" id="toggle-alias-btn" class="btn-text">Add custom alias</button>
+                            <button type="submit" class="btn btn-primary" id="shorten-btn">
+                                <span>Shorten URL</span>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                            </button>
+                        </div>
+                        <div id="shorten-error" class="error-message"></div>
+                    </form>
+                    
+                    <!-- Result Box (Hidden by default) -->
+                    <div id="result-box" class="result-box hidden glass-highlight">
+                        <p class="success-text">URL Successfully Shortened!</p>
+                        <div class="result-url">
+                            <a href="#" id="result-link" target="_blank" rel="noopener noreferrer"></a>
+                            <button id="copy-btn" class="btn-icon" title="Copy to clipboard">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="urls-section">
+                <div class="section-header">
+                    <h2>Your Links</h2>
+                    <span id="links-count" class="badge">0</span>
+                </div>
+                
+                <div id="urls-list" class="urls-list">
+                    <!-- Loading state -->
+                    <div class="skeleton-loader">
+                        <div class="skeleton-item"></div>
+                        <div class="skeleton-item"></div>
+                        <div class="skeleton-item"></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+        
+        <footer>
+            <p>&copy; 2026 ShortLink App.</p>
+        </footer>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/dashboard.js"></script>
+</body>
+</html>
