@@ -11,25 +11,30 @@ const schema = z.object({
 })
 
 export async function POST(request) {
-    const body = await request.json()
-    const result = schema.safeParse(body)
+    try {
+        const body = await request.json()
+        const result = schema.safeParse(body)
 
-    if (!result.success) {
-        return Response.json({ error: result.error.format() }, { status: 400 })
+        if (!result.success) {
+            return Response.json({ error: result.error.format() }, { status: 400 })
+        }
+
+        const { email, password } = result.data
+
+        const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email))
+        if (!user) {
+            return Response.json({ error: `No user found with email ${email}` }, { status: 401 })
+        }
+
+        const { password: hashed } = hashPasswordWithSalt(password, user.salt)
+        if (user.password !== hashed) {
+            return Response.json({ error: 'Incorrect password' }, { status: 401 })
+        }
+
+        const token = signToken({ id: user.id })
+        return Response.json({ message: 'Logged in successfully', token, userId: user.id })
+    } catch (e) {
+        console.error('[login]', e)
+        return Response.json({ error: 'Internal server error' }, { status: 500 })
     }
-
-    const { email, password } = result.data
-
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email))
-    if (!user) {
-        return Response.json({ error: `No user found with email ${email}` }, { status: 401 })
-    }
-
-    const { password: hashed } = hashPasswordWithSalt(password, user.salt)
-    if (user.password !== hashed) {
-        return Response.json({ error: 'Incorrect password' }, { status: 401 })
-    }
-
-    const token = signToken({ id: user.id })
-    return Response.json({ message: 'Logged in successfully', token, userId: user.id })
 }

@@ -38,7 +38,14 @@ export default function AuthForm({ mode }) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
             })
-            const data = await res.json()
+
+            let data
+            try {
+                data = await res.json()
+            } catch {
+                throw new Error('Server error — please try again')
+            }
+
             if (!res.ok) throw new Error(data.error || 'Something went wrong')
 
             if (isLogin) {
